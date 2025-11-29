@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y \
 
 # 2. 安装 FRP (v0.54.0)
 WORKDIR /tmp
-RUN wget -O frp.tar.gz https://github.com/fatedier/frp/releases/download/v0.54.0/frp_0.54.0_linux_amd64.tar.gz \
+RUN wget -O frp.tar.gz https://github.com/fatedier/frp/releases/download/v0.65.0/frp_0.65.0_linux_amd64.tar.gz \
     && tar -zxvf frp.tar.gz \
     && mkdir -p /frp \
     && mv frp_*/frpc /frp/frpc \
