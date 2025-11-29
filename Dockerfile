@@ -1,4 +1,3 @@
-# Dockerfile
 FROM ubuntu:22.04
 
 # 避免交互式安装卡住
@@ -37,7 +36,8 @@ RUN wget -O frp.tar.gz https://github.com/fatedier/frp/releases/download/v0.65.0
     && rm -rf /tmp/*
 
 # 3. 配置 SSH 和 运行目录
-RUN mkdir -p /var/run/sshd /run/php \
+RUN mkdir -p /var/run/sshd /run/php /var/run/mysqld \
+    && chown -R mysql:mysql /var/run/mysqld \
     && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
     && sed -i 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' /etc/pam.d/sshd
 
@@ -47,7 +47,7 @@ COPY nginx-app.conf /etc/nginx/sites-available/default
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# 5. 声明挂载点 (重要：只挂载 /data)
+# 5. 声明挂载点
 VOLUME ["/data"]
 
 # 6. 启动
