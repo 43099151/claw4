@@ -64,19 +64,21 @@ init_nginx() {
     sed -i "s/site4.example.com/$D_SITE4/g" /etc/nginx/sites-available/default
     cp -r /etc/nginx/sites-available /data/config/nginx
 }
-# 链接 sites-enabled -> /data/config/nginx
 link_config "/etc/nginx/sites-enabled" "/data/config/nginx" "init_nginx"
 
 # --- 3. 持久化 Supervisor 配置 ---
 link_config "/etc/supervisor/conf.d/supervisord.conf" "/data/config/supervisord.conf"
 
-# --- 4. 持久化 FRP 配置 (含加密和压缩) ---
+# --- 4. 持久化 FRP 配置 (关键修改：增加 log_level) ---
 init_frp() {
 cat > /data/config/frpc.ini <<EOF
 [common]
 server_addr = $FRPS_ADDR
 server_port = $FRPS_PORT
 token = $FRPS_TOKEN
+# --- 日志降噪设置 ---
+log_level = error
+login_fail_exit = false
 
 [ssh-vps]
 type = tcp
