@@ -35,24 +35,33 @@ RUN wget -O frp.tar.gz https://github.com/fatedier/frp/releases/download/v0.65.0
     && chmod +x /frp/frpc \
     && rm -rf /tmp/*
 
-# 3. 配置 SSH (含心跳保活)、PHP 和 MySQL 运行目录
+# 3. 安装 phpMyAdmin (新增步骤)
+# 下载 5.2.1 版本
+RUN wget https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip \
+    && unzip phpMyAdmin-5.2.1-all-languages.zip \
+    && mv phpMyAdmin-5.2.1-all-languages /usr/share/phpmyadmin \
+    && rm phpMyAdmin-5.2.1-all-languages.zip \
+    # 创建临时目录
+    && mkdir -p /usr/share/phpmyadmin/tmp \
+    && chown -R www-data:www-data /usr/share/phpmyadmin \
+    && chmod 777 /usr/share/phpmyadmin/tmp
+
+# 4. 配置 SSH (含心跳保活)、PHP 和 MySQL 运行目录
 RUN mkdir -p /var/run/sshd /run/php /var/run/mysqld \
     && chown -R mysql:mysql /var/run/mysqld \
     && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
-    # 修复 PAM 登录问题
     && sed -i 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' /etc/pam.d/sshd \
-    # --- 关键：配置 SSH 心跳，防止 Serverless 平台断开连接 ---
     && echo "ClientAliveInterval 30" >> /etc/ssh/sshd_config \
     && echo "ClientAliveCountMax 3" >> /etc/ssh/sshd_config
 
-# 4. 复制配置文件 (作为初始模板)
+# 5. 复制配置文件
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY nginx-app.conf /etc/nginx/sites-available/default
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# 5. 声明挂载点
+# 6. 声明挂载点
 VOLUME ["/data"]
 
-# 6. 启动
+# 7. 启动
 CMD ["/entrypoint.sh"]
