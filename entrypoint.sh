@@ -149,11 +149,21 @@ if [ ! -f "/usr/share/phpmyadmin/config.inc.php" ]; then
 \$i = 0;
 \$i++;
 \$cfg['Servers'][\$i]['auth_type'] = 'cookie';
-\$cfg['Servers'][\$i]['host'] = 'localhost';
+
+/* --- 修改这里：强制使用 TCP 连接，解决 Permission denied 问题 --- */
+\$cfg['Servers'][\$i]['host'] = '127.0.0.1'; 
+
 \$cfg['Servers'][\$i]['compress'] = false;
 \$cfg['Servers'][\$i]['AllowNoPassword'] = false;
 \$cfg['UploadDir'] = '';
 \$cfg['SaveDir'] = '';
+
+/* --- 修复 HTTPS 协议不匹配警告 --- */
+if (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+    \$cfg['PmaAbsoluteUri'] = 'https://' . \$_SERVER['HTTP_HOST'] . '/phpmyadmin/';
+} else {
+    \$cfg['PmaAbsoluteUri'] = 'https://' . \$_SERVER['HTTP_HOST'] . '/phpmyadmin/';
+}
 ?>
 EOF
 fi
