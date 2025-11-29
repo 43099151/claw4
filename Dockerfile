@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     openssh-server \
     nginx \
     mysql-server \
-    # --- PHP 全家桶 ---
+    # --- PHP 全家桶 (PHP 8.1) ---
     php-fpm \
     php-mysql \
     php-curl \
@@ -28,20 +28,24 @@ RUN apt-get update && apt-get install -y \
 
 # 2. 安装 FRP (v0.54.0)
 WORKDIR /tmp
-RUN wget -O frp.tar.gz https://github.com/fatedier/frp/releases/download/v0.65.0/frp_0.65.0_linux_amd64.tar.gz \
+RUN wget -O frp.tar.gz https://github.com/fatedier/frp/releases/download/v0.54.0/frp_0.54.0_linux_amd64.tar.gz \
     && tar -zxvf frp.tar.gz \
     && mkdir -p /frp \
     && mv frp_*/frpc /frp/frpc \
     && chmod +x /frp/frpc \
     && rm -rf /tmp/*
 
-# 3. 配置 SSH 和 运行目录
+# 3. 配置 SSH (含心跳保活)、PHP 和 MySQL 运行目录
 RUN mkdir -p /var/run/sshd /run/php /var/run/mysqld \
     && chown -R mysql:mysql /var/run/mysqld \
     && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
-    && sed -i 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' /etc/pam.d/sshd
+    # 修复 PAM 登录问题
+    && sed -i 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' /etc/pam.d/sshd \
+    # --- 关键：配置 SSH 心跳，防止 Serverless 平台断开连接 ---
+    && echo "ClientAliveInterval 30" >> /etc/ssh/sshd_config \
+    && echo "ClientAliveCountMax 3" >> /etc/ssh/sshd_config
 
-# 4. 复制配置文件
+# 4. 复制配置文件 (作为初始模板)
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY nginx-app.conf /etc/nginx/sites-available/default
 COPY entrypoint.sh /entrypoint.sh
