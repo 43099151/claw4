@@ -75,6 +75,9 @@ server_port = $FRPS_PORT
 token = $FRPS_TOKEN
 log_level = error
 login_fail_exit = false
+tcp_keepalive = 20
+heartbeat_interval = 20
+heartbeat_timeout =30
 
 [ssh-vps]
 type = tcp
