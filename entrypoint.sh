@@ -68,47 +68,54 @@ link_config "/etc/supervisor/conf.d/supervisord.conf" "/data/config/supervisord.
 
 # --- 4. 持久化 FRP 配置 ---
 init_frp() {
-cat > /data/config/frpc.ini <<EOF
+cat > /data/config/frpc.toml <<EOF
 [common]
-server_addr = $FRPS_ADDR
-server_port = $FRPS_PORT
-token = $FRPS_TOKEN
-log_level = error
-login_fail_exit = false
-tcp_keepalive = 20
-heartbeat_interval = 20
-heartbeat_timeout =30
+serverAddr = "$FRPS_ADDR"
+serverPort = $FRPS_PORT
+token = "$FRPS_TOKEN"
+logLevel = "error"
+loginFailExit = false
+tcpKeepAlive = 20
+heartbeatInterval = 20
+heartbeatTimeout = 30
+transport.heartbeatInterval = 20
+transport.heartbeatTimeout = 30
 
-[ssh-vps]
-type = tcp
-local_ip = 127.0.0.1
-local_port = 22
-remote_port = $REMOTE_PORT
-use_encryption = true
-use_compression = true
+[[proxies]]
+name = "ssh-vps"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 22
+remotePort = $REMOTE_PORT
+useEncryption = true
+useCompression = true
 
-[web-site1]
-type = http
-local_port = 80
-custom_domains = $D_SITE1
+[[proxies]]
+name = "web-site1"
+type = "http"
+localPort = 80
+customDomains = ["$D_SITE1"]
 
-[web-site2]
-type = http
-local_port = 80
-custom_domains = $D_SITE2
+[[proxies]]
+name = "web-site2"
+type = "http"
+localPort = 80
+customDomains = ["$D_SITE2"]
 
-[web-site3]
-type = http
-local_port = 80
-custom_domains = $D_SITE3
+[[proxies]]
+name = "web-site3"
+type = "http"
+localPort = 80
+customDomains = ["$D_SITE3"]
 
-[web-site4]
-type = http
-local_port = 80
-custom_domains = $D_SITE4
+[[proxies]]
+name = "web-site4"
+type = "http"
+localPort = 80
+customDomains = ["$D_SITE4"]
 EOF
 }
-link_config "/frp/frpc.ini" "/data/config/frpc.ini" "init_frp"
+link_config "/frp/frpc.toml" "/data/config/frpc.toml" "init_frp"
 
 # --- 5. 初始化 MySQL ---
 if [ ! -d "/data/mysql/mysql" ]; then
