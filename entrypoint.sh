@@ -68,18 +68,22 @@ link_config "/etc/supervisor/conf.d/supervisord.conf" "/data/config/supervisord.
 
 # --- 4. 持久化 FRP 配置 ---
 init_frp() {
+# 注意：文件名改为 frpc.toml
 cat > /data/config/frpc.toml <<EOF
-[common]
 serverAddr = "$FRPS_ADDR"
 serverPort = $FRPS_PORT
+
+[auth]
+method = "token"
 token = "$FRPS_TOKEN"
-logLevel = "error"
-loginFailExit = false
-tcpKeepAlive = 20
+
+[log]
+level = "error"
+
+[transport]
 heartbeatInterval = 20
 heartbeatTimeout = 30
-transport.heartbeatInterval = 20
-transport.heartbeatTimeout = 30
+# 注意：v0.52+ 已移除 loginFailExit 和 tcpKeepAlive，此处不再生成
 
 [[proxies]]
 name = "ssh-vps"
@@ -87,8 +91,8 @@ type = "tcp"
 localIP = "127.0.0.1"
 localPort = 22
 remotePort = $REMOTE_PORT
-useEncryption = true
-useCompression = true
+transport.useEncryption = true
+transport.useCompression = true
 
 [[proxies]]
 name = "web-site1"
@@ -115,6 +119,8 @@ localPort = 80
 customDomains = ["$D_SITE4"]
 EOF
 }
+
+# 注意：这里参数的文件后缀也需要改为 .toml
 link_config "/frp/frpc.toml" "/data/config/frpc.toml" "init_frp"
 
 # --- 5. 初始化 MySQL ---
