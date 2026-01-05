@@ -26,14 +26,14 @@ RUN apt-get update && apt-get install -y \
     # --- 清理缓存 ---
     && rm -rf /var/lib/apt/lists/*
 
-# 2. 安装 FRP (v0.54.0)
-WORKDIR /tmp
-RUN wget -O frp.tar.gz https://github.com/fatedier/frp/releases/download/v0.65.0/frp_0.65.0_linux_amd64.tar.gz \
-    && tar -zxvf frp.tar.gz \
-    && mkdir -p /frp \
-    && mv frp_*/frpc /frp/frpc \
-    && chmod +x /frp/frpc \
-    && rm -rf /tmp/*
+# 2. 安装 Tailscale (静态二进制文件 v1.92.3)
+ARG TS_VERSION=1.92.3
+ENV TS_ARCH=amd64
+RUN curl -fsSL https://pkgs.tailscale.com/stable/tailscale_${TS_VERSION}_${TS_ARCH}.tgz -o tailscale.tgz && \
+    tar xzf tailscale.tgz && \
+    mv tailscale_${TS_VERSION}_${TS_ARCH}/tailscaled /usr/sbin/tailscaled && \
+    mv tailscale_${TS_VERSION}_${TS_ARCH}/tailscale /usr/bin/tailscale && \
+    rm -rf tailscale.tgz tailscale_${TS_VERSION}_${TS_ARCH}
 
 # 3. 安装 phpMyAdmin (新增步骤)
 # 下载 5.2.1 版本
