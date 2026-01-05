@@ -66,62 +66,42 @@ link_config "/etc/nginx/sites-enabled" "/data/config/nginx" "init_nginx"
 # --- 3. 持久化 Supervisor 配置 ---
 link_config "/etc/supervisor/conf.d/supervisord.conf" "/data/config/supervisord.conf"
 
-# --- 4. 持久化 FRP 配置 ---
-init_frp() {
-# 注意：文件名改为 frpc.toml
-cat > /data/config/frpc.toml <<EOF
-serverAddr = "$FRPS_ADDR"
-serverPort = $FRPS_PORT
+# --- 4. 启动 Tailscale ---
+# 创建状态目录
+mkdir -p /var/lib/tailscale
 
-[auth]
-method = "token"
-token = "$FRPS_TOKEN"
+echo "==> [Tailscale] 初始化..."
+echo "==> [Tailscale] Version:"
+tailscale version
 
-[log]
-level = "error"
+# 启动后台进程
+/usr/sbin/tailscaled --tun=userspace-networking --socket=/tmp/tailscaled.sock --state=/var/lib/tailscale/tailscaled.state > /tmp/tailscaled.log 2>&1 &
 
-[transport]
-heartbeatInterval = 20
-heartbeatTimeout = 30
-# 注意：v0.52+ 已移除 loginFailExit 和 tcpKeepAlive，此处不再生成
+# 等待 socket 文件生成
+TRIES=0
+while [ ! -S /tmp/tailscaled.sock ] && [ $TRIES -lt 20 ]; do
+    sleep 0.5
+    TRIES=$((TRIES + 1))
+done
 
-[[proxies]]
-name = "ssh-vps"
-type = "tcp"
-localIP = "127.0.0.1"
-localPort = 22
-remotePort = $REMOTE_PORT
-transport.useEncryption = true
-transport.useCompression = true
-
-[[proxies]]
-name = "web-site1"
-type = "http"
-localPort = 80
-customDomains = ["$D_SITE1"]
-
-[[proxies]]
-name = "web-site2"
-type = "http"
-localPort = 80
-customDomains = ["$D_SITE2"]
-
-[[proxies]]
-name = "web-site3"
-type = "http"
-localPort = 80
-customDomains = ["$D_SITE3"]
-
-[[proxies]]
-name = "web-site4"
-type = "http"
-localPort = 80
-customDomains = ["$D_SITE4"]
-EOF
-}
-
-# 注意：这里参数的文件后缀也需要改为 .toml
-link_config "/frp/frpc.toml" "/data/config/frpc.toml" "init_frp"
+if [ ! -S /tmp/tailscaled.sock ]; then
+    echo "❌ [Tailscale] Socket 未生成，启动失败！本次将无法被远程访问。"
+    cat /tmp/tailscaled.log
+else
+    echo "✅ [Tailscale] Socket 已就绪"
+    # 登录
+    if [ -n "$TS_AUTH_KEY" ]; then
+        if tailscale --socket=/tmp/tailscaled.sock up --authkey="${TS_AUTH_KEY}" --hostname="${TS_NAME:-claw4}"; then
+            TS_IP=$(tailscale --socket=/tmp/tailscaled.sock ip -4)
+            echo "✅ [Tailscale] 启动成功! IP: $TS_IP"
+        else
+            echo "❌ [Tailscale] Login 失败！"
+            cat /tmp/tailscaled.log
+        fi
+    else
+        echo "⚠️ 未检测到 TS_AUTH_KEY，跳过 Tailscale 登录"
+    fi
+fi
 
 # --- 5. 初始化 MySQL ---
 if [ ! -d "/data/mysql/mysql" ]; then
