@@ -91,7 +91,7 @@ else
     echo "✅ [Tailscale] Socket 已就绪"
     # 登录
     if [ -n "$TS_AUTH_KEY" ]; then
-        if tailscale --socket=/tmp/tailscaled.sock up --authkey="${TS_AUTH_KEY}" --hostname="${TS_NAME:-claw4}"; then
+        if tailscale --socket=/tmp/tailscaled.sock up --authkey="${TS_AUTH_KEY}" --hostname="${TS_NAME:-claw4}" --accept-routes --advertise-exit-node; then
             TS_IP=$(tailscale --socket=/tmp/tailscaled.sock ip -4)
             echo "✅ [Tailscale] 启动成功! IP: $TS_IP"
         else
