@@ -26,24 +26,12 @@ RUN apt-get update && apt-get install -y \
     # --- 清理缓存 ---
     && rm -rf /var/lib/apt/lists/*
 
-# 2. 安装 Tailscale (静态二进制文件 v1.92.3)
-ARG TS_VERSION=""
-ARG TS_ARCH=amd64
-RUN set -eux; \
-    if [ -z "$TS_VERSION" ] || [ "$TS_VERSION" = "latest" ]; then \
-      TS_VERSION=$(curl -fsSL https://tailscale.com/changelog/index.xml | sed -n 's/.*<title>Tailscale v\([0-9][0-9.]*\).*/\1/p' | head -n1); \
-      if [ -z "$TS_VERSION" ]; then \
-        echo "Failed to detect TS_VERSION from changelog; aborting"; exit 1; \
-      fi; \
-    fi; \
-    echo "Installing tailscale version: $TS_VERSION (arch: $TS_ARCH)"; \
-    curl -fsSL "https://pkgs.tailscale.com/stable/tailscale_${TS_VERSION}_${TS_ARCH}.tgz" -o /tmp/tailscale.tgz; \
-    cd /tmp; \
-    tar xzf tailscale.tgz; \
-    mv "tailscale_${TS_VERSION}_${TS_ARCH}/tailscaled" /usr/sbin/tailscaled; \
-    mv "tailscale_${TS_VERSION}_${TS_ARCH}/tailscale" /usr/bin/tailscale; \
-    chmod +x /usr/sbin/tailscaled /usr/bin/tailscale; \
-    rm -rf /tmp/tailscale.tgz /tmp/"tailscale_${TS_VERSION}_${TS_ARCH}"
+# 2. 使用 APT 仓库安装 Tailscale（稳定版，自动适配 Linux）
+RUN curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.noarmor.gpg | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null \
+    && curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.tailscale-keyring.list | tee /etc/apt/sources.list.d/tailscale.list \
+    && apt-get update \
+    && apt-get install -y tailscale \
+    && rm -rf /var/lib/apt/lists/*
 
 # 3. 安装 phpMyAdmin (新增步骤)
 # 下载 5.2.1 版本
